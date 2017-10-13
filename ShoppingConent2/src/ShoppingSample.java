@@ -95,7 +95,6 @@ public class ShoppingSample {
 				page = productsList.execute();
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -143,7 +142,6 @@ public class ShoppingSample {
 			}
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -156,7 +154,6 @@ public class ShoppingSample {
 			System.out.printf("Delete product executed with product ID %s%n", id);
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
