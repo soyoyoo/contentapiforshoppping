@@ -19,7 +19,6 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-
 import com.google.api.services.content.ShoppingContent;
 import com.google.api.services.content.ShoppingContentScopes;
 import com.google.api.services.content.ShoppingContent.Products.List;
@@ -27,13 +26,17 @@ import com.google.api.services.content.model.Account;
 import com.google.api.services.content.model.AccountAdwordsLink;
 import com.google.api.services.content.model.AccountUser;
 import com.google.api.services.content.model.Error;
+import com.google.api.services.content.model.InventorySetRequest;
 import com.google.api.services.content.model.Price;
 import com.google.api.services.content.model.Product;
+import com.google.api.services.content.model.ProductStatus;
+import com.google.api.services.content.model.ProductStatusDestinationStatus;
 import com.google.api.services.content.model.ProductsCustomBatchRequest;
 import com.google.api.services.content.model.ProductsCustomBatchRequestEntry;
 import com.google.api.services.content.model.ProductsCustomBatchResponse;
 import com.google.api.services.content.model.ProductsCustomBatchResponseEntry;
 import com.google.api.services.content.model.ProductsListResponse;
+import com.google.api.services.content.model.ProductstatusesListResponse;
 
 public class ShoppingSample {
 	private static final String FILE_NAME = "My Project-9ce430751b21.json";
@@ -63,11 +66,14 @@ public class ShoppingSample {
 					.setApplicationName(APPLICATION_NAME);
 			ShoppingContent content = builder.build();
 			listProducts(merchantId1, content);
-			insertProduct(merchantId2,content);
-			
-			batchInsertProducts(merchantId2,content);
-			deleteProduct(merchantId2,content);
-			insertAccount(mcaId,content);
+	//		listProductstatuses(merchantId1, content);
+	//		insertProduct(merchantId2,content);
+	//		updatePrice(merchantId1,content);
+	//		batchUpdatePrice(merchantId1,content);   // to develop
+	//		batchInsertProducts(merchantId2,content);
+	//		batchDeleteProducts(merchantId2,content);
+	//		deleteProduct(merchantId2,content);
+	//		insertAccount(mcaId,content);
 		//	deleteAccount(mcaId,BigInteger.valueOf(118467480),content);
 			
 		} catch (Exception e) {
@@ -80,7 +86,7 @@ public class ShoppingSample {
 		List productsList;
 		try {
 			productsList = content.products().list(merchantId);
-
+			
 			ProductsListResponse page = productsList.execute();
 			while ((page.getResources() != null)
 					&& !page.getResources().isEmpty()) {
@@ -98,22 +104,46 @@ public class ShoppingSample {
 			e.printStackTrace();
 		}
 	}
+	public void listProductstatuses(BigInteger merchantId, ShoppingContent content) {
+		
+		try {
+			ShoppingContent.Productstatuses.List productStatusesList = content.productstatuses().list(merchantId);
+		    ProductstatusesListResponse page = productStatusesList.execute();
+		    while ((page.getResources() != null) && !page.getResources().isEmpty()) {
+		      for (ProductStatus productStatus : page.getResources()) {
+		        System.out.printf("%s %s\n", productStatus.getProductId(), productStatus.getTitle());
+		        for (ProductStatusDestinationStatus status : productStatus.getDestinationStatuses()) {
+		            System.out.printf(" - %s (%s) - %s\n", status.getDestination(), status.getIntention(),
+		                status.getApprovalStatus());
+		          }
+		      }
+		      if (page.getNextPageToken() == null) {
+		        break;
+		      }
+		      productStatusesList.setPageToken(page.getNextPageToken());
+		      page = productStatusesList.execute();
+		    }
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+ 
     // insert a new product or update a product if it exists
 	public void insertProduct(BigInteger merchantId, ShoppingContent content) {
 		try {
 			Product product = new Product();
 
-			product.setOfferId("book2");
-			product.setTitle("물리학 이야기");
-			product.setDescription("쉽게 배우는 물리학");
-			product.setLink("http://my-book-shop.com/book123.html");
-			product.setImageLink("http://my-book-shop.com/book123.jpg");
+			product.setOfferId("cat01");
+			product.setTitle("고양이 장난감");
+			product.setDescription("고양이 장난감");
+			product.setLink("http://glossy-depot-510.appspot.com/cat/index.html");
+			product.setImageLink("http://glossy-depot-510.appspot.com/cat2.png");
 			product.setContentLanguage("ko");
 			product.setTargetCountry("KR");
 			product.setChannel("online");
 			product.setAvailability("in stock");
 			product.setCondition("new");
-			product.setGoogleProductCategory("Media > Books");
 			product.setGtin("9780009350899");
 			product.setAdult(false);
 
@@ -121,7 +151,7 @@ public class ShoppingSample {
 			price.setValue("25000");
 			price.setCurrency("KRW");
 			product.setPrice(price);
-
+			
 			Product result = content.products().insert(merchantId, product)
 					.execute();
 
@@ -141,6 +171,26 @@ public class ShoppingSample {
 				}
 			}
 
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public void updatePrice(BigInteger merchantId, ShoppingContent content) {
+		try {
+			String id = "online:ko:KR:cat01";
+			InventorySetRequest inventory = new InventorySetRequest();
+
+			Price price = new Price();
+			price.setValue("13000");
+			price.setCurrency("KRW");
+
+			inventory.setPrice(price);
+
+			content.inventory()
+			    .set(merchantId, "online", id, inventory)
+			    .execute();
+			System.out.printf("Update price executed with product ID %s%n", id);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -165,18 +215,16 @@ public class ShoppingSample {
 			ProductsCustomBatchRequest batchRequest = new ProductsCustomBatchRequest();
 			for (int i = 1; i <= 100; i++) {
 				Product product = new Product();
-				product.setOfferId("book" + i);
-				product.setTitle("물리학 이야기 " + i);
-				product.setDescription("쉽게 배우는 물리학 " + i);
-				product.setLink("http://my-book-shop.com/book" + i + ".html");
-				product.setImageLink("http://my-book-shop.com/book" + i
-						+ ".jpg");
+				product.setOfferId("cat" + i);
+				product.setTitle("고양이 장난감 " + i);
+				product.setDescription("고양이 장난감 " + i);
+				product.setLink("http://glossy-depot-510.appspot.com/cat/index.html");
+				product.setImageLink("http://glossy-depot-510.appspot.com/cat2.png");
 				product.setContentLanguage("ko");
 				product.setTargetCountry("KR");
 				product.setChannel("online");
 				product.setAvailability("in stock");
 				product.setCondition("new");
-				product.setGoogleProductCategory("Media > Books");
 				product.setGtin("978000935089" + i);
 				product.setAdult(false);
 
@@ -212,6 +260,32 @@ public class ShoppingSample {
 					}
 				}
 
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public void batchDeleteProducts(BigInteger merchantId,
+			ShoppingContent content) {
+		try {
+			java.util.List<ProductsCustomBatchRequestEntry> productsBatchRequestEntries = new ArrayList<ProductsCustomBatchRequestEntry>();
+			ProductsCustomBatchRequest batchRequest = new ProductsCustomBatchRequest();
+			for (int i = 1; i <= 100; i++) {
+				ProductsCustomBatchRequestEntry entry = new ProductsCustomBatchRequestEntry();
+				entry.setBatchId((long) i);
+				entry.setMerchantId(merchantId);
+				entry.setProductId("online:ko:KR:book" + i);
+				entry.setMethod("delete");
+				productsBatchRequestEntries.add(entry);
+			}
+
+			batchRequest.setEntries(productsBatchRequestEntries);
+			ProductsCustomBatchResponse batchResponse = content.products()
+					.custombatch(batchRequest).execute();
+
+			for (ProductsCustomBatchResponseEntry entry : batchResponse
+					.getEntries()) {
+				System.out.println("Batch " + entry.getBatchId() + " completed");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
