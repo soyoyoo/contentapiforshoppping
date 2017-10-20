@@ -20,12 +20,18 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.services.content.ShoppingContent;
+import com.google.api.services.content.model.Inventory;
 import com.google.api.services.content.ShoppingContentScopes;
 import com.google.api.services.content.ShoppingContent.Products.List;
 import com.google.api.services.content.model.Account;
 import com.google.api.services.content.model.AccountAdwordsLink;
 import com.google.api.services.content.model.AccountUser;
 import com.google.api.services.content.model.Error;
+import com.google.api.services.content.model.Errors;
+import com.google.api.services.content.model.InventoryCustomBatchRequest;
+import com.google.api.services.content.model.InventoryCustomBatchRequestEntry;
+import com.google.api.services.content.model.InventoryCustomBatchResponse;
+import com.google.api.services.content.model.InventoryCustomBatchResponseEntry;
 import com.google.api.services.content.model.InventorySetRequest;
 import com.google.api.services.content.model.Price;
 import com.google.api.services.content.model.Product;
@@ -47,7 +53,8 @@ public class ShoppingSample {
 	private static BigInteger mcaId = BigInteger.valueOf(111316412);
 	// Test Merchant ID with products (need to change into your account)
 	private BigInteger merchantId1 = BigInteger.valueOf(111315589);
-	// Test Merchant ID to insert/remove products (need to change into your account)
+	// Test Merchant ID to insert/remove products (need to change into your
+	// account)
 	private BigInteger merchantId2 = BigInteger.valueOf(118285250);
 	// Test 3rd party merchant ID (need to change into your account)
 	private BigInteger merchantId3 = BigInteger.valueOf(117779752);
@@ -65,17 +72,18 @@ public class ShoppingSample {
 					httpTransport, jsonFactory, credential)
 					.setApplicationName(APPLICATION_NAME);
 			ShoppingContent content = builder.build();
-			listProducts(merchantId1, content);
-	//		listProductstatuses(merchantId1, content);
-	//		insertProduct(merchantId2,content);
-	//		updatePrice(merchantId1,content);
-	//		batchUpdatePrice(merchantId1,content);   // to develop
-	//		batchInsertProducts(merchantId2,content);
-	//		batchDeleteProducts(merchantId2,content);
-	//		deleteProduct(merchantId2,content);
-	//		insertAccount(mcaId,content);
-		//	deleteAccount(mcaId,BigInteger.valueOf(118467480),content);
-			
+			listProducts(merchantId2, content);
+			 listProductstatuses(merchantId2, content);
+			// insertProduct(merchantId2,content);
+			// updatePrice(merchantId1,content);
+			// updateAvailability(merchantId1,content);
+			// batchUpdatePriceAvailability(merchantId2,content);
+			// batchInsertProducts(merchantId2, content);
+			// batchDeleteProducts(merchantId2,content);
+			// deleteProduct(merchantId2,content);
+			// insertAccount(mcaId, content);
+			// deleteAccount(mcaId, BigInteger.valueOf(118467480),content);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -86,13 +94,14 @@ public class ShoppingSample {
 		List productsList;
 		try {
 			productsList = content.products().list(merchantId);
-			
+
 			ProductsListResponse page = productsList.execute();
 			while ((page.getResources() != null)
 					&& !page.getResources().isEmpty()) {
 				for (Product product : page.getResources()) {
-					System.out.printf("%s %s%n", product.getId(),
-							product.getTitle());
+					System.out.printf("%s %s %s %s %n", product.getId(),
+							product.getTitle(), product.getPrice(),
+							product.getAvailability());
 				}
 				if (page.getNextPageToken() == null) {
 					break;
@@ -104,32 +113,39 @@ public class ShoppingSample {
 			e.printStackTrace();
 		}
 	}
-	public void listProductstatuses(BigInteger merchantId, ShoppingContent content) {
-		
+
+	public void listProductstatuses(BigInteger merchantId,
+			ShoppingContent content) {
+
 		try {
-			ShoppingContent.Productstatuses.List productStatusesList = content.productstatuses().list(merchantId);
-		    ProductstatusesListResponse page = productStatusesList.execute();
-		    while ((page.getResources() != null) && !page.getResources().isEmpty()) {
-		      for (ProductStatus productStatus : page.getResources()) {
-		        System.out.printf("%s %s\n", productStatus.getProductId(), productStatus.getTitle());
-		        for (ProductStatusDestinationStatus status : productStatus.getDestinationStatuses()) {
-		            System.out.printf(" - %s (%s) - %s\n", status.getDestination(), status.getIntention(),
-		                status.getApprovalStatus());
-		          }
-		      }
-		      if (page.getNextPageToken() == null) {
-		        break;
-		      }
-		      productStatusesList.setPageToken(page.getNextPageToken());
-		      page = productStatusesList.execute();
-		    }
-			
+			ShoppingContent.Productstatuses.List productStatusesList = content
+					.productstatuses().list(merchantId);
+			ProductstatusesListResponse page = productStatusesList.execute();
+			while ((page.getResources() != null)
+					&& !page.getResources().isEmpty()) {
+				for (ProductStatus productStatus : page.getResources()) {
+					System.out.printf("%s %s\n", productStatus.getProductId(),
+							productStatus.getTitle());
+					for (ProductStatusDestinationStatus status : productStatus
+							.getDestinationStatuses()) {
+						System.out.printf(" - %s (%s) - %s\n",
+								status.getDestination(), status.getIntention(),
+								status.getApprovalStatus());
+					}
+				}
+				if (page.getNextPageToken() == null) {
+					break;
+				}
+				productStatusesList.setPageToken(page.getNextPageToken());
+				page = productStatusesList.execute();
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
- 
-    // insert a new product or update a product if it exists
+
+	// insert a new product or update a product if it exists
 	public void insertProduct(BigInteger merchantId, ShoppingContent content) {
 		try {
 			Product product = new Product();
@@ -151,7 +167,7 @@ public class ShoppingSample {
 			price.setValue("25000");
 			price.setCurrency("KRW");
 			product.setPrice(price);
-			
+
 			Product result = content.products().insert(merchantId, product)
 					.execute();
 
@@ -175,6 +191,7 @@ public class ShoppingSample {
 			e.printStackTrace();
 		}
 	}
+
 	public void updatePrice(BigInteger merchantId, ShoppingContent content) {
 		try {
 			String id = "online:ko:KR:cat01";
@@ -186,28 +203,43 @@ public class ShoppingSample {
 
 			inventory.setPrice(price);
 
-			content.inventory()
-			    .set(merchantId, "online", id, inventory)
-			    .execute();
+			content.inventory().set(merchantId, "online", id, inventory)
+					.execute();
 			System.out.printf("Update price executed with product ID %s%n", id);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+
+	public void updateAvailability(BigInteger merchantId,
+			ShoppingContent content) {
+		try {
+			String id = "online:ko:KR:cat01";
+			InventorySetRequest inventory = new InventorySetRequest();
+			inventory.setAvailability("out of stock");
+			content.inventory().set(merchantId, "online", id, inventory)
+					.execute();
+			System.out.printf(
+					"Update availability executed with product ID %s%n", id);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void deleteProduct(BigInteger merchantId, ShoppingContent content) {
 		try {
 			String id = "online:ko:KR:book1";
-			content.products()
-	        .delete(merchantId, id)
-	        .execute();
-			System.out.printf("Delete product executed with product ID %s%n", id);
-			
+			content.products().delete(merchantId, id).execute();
+			System.out.printf("Delete product executed with product ID %s%n",
+					id);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void batchInsertProducts(BigInteger merchantId,
 			ShoppingContent content) {
 		try {
@@ -265,6 +297,7 @@ public class ShoppingSample {
 			e.printStackTrace();
 		}
 	}
+
 	public void batchDeleteProducts(BigInteger merchantId,
 			ShoppingContent content) {
 		try {
@@ -285,7 +318,70 @@ public class ShoppingSample {
 
 			for (ProductsCustomBatchResponseEntry entry : batchResponse
 					.getEntries()) {
-				System.out.println("Batch " + entry.getBatchId() + " completed");
+				System.out
+						.println("batch " + entry.getBatchId() + " requested");
+				Errors errors = entry.getErrors();
+				java.util.List<Error> list = null;
+				if (errors != null)
+					list = errors.getErrors();
+				if (list != null) {
+					System.out.printf("batch id %s has errors",
+							entry.getBatchId());
+					for (Error error : list) {
+						System.out.printf("[%s] %s%n", error.getReason(),
+								error.getMessage());
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void batchUpdatePriceAvailability(BigInteger merchantId,
+			ShoppingContent content) {
+		try {
+			java.util.List<InventoryCustomBatchRequestEntry> inventoryBatchRequestEntries = new ArrayList<InventoryCustomBatchRequestEntry>();
+			InventoryCustomBatchRequest batchRequest = new InventoryCustomBatchRequest();
+			for (int i = 1; i <= 100; i++) {
+				Price price = new Price();
+				price.setValue("55000");
+				price.setCurrency("KRW");
+
+				Inventory inventory = new Inventory();
+				inventory.setPrice(price);
+				inventory.setAvailability("out of stock");
+
+				InventoryCustomBatchRequestEntry entry = new InventoryCustomBatchRequestEntry();
+				entry.setBatchId((long) i);
+				entry.setMerchantId(merchantId);
+				entry.setInventory(inventory);
+				entry.setProductId("online:ko:KR:cat" + i);
+				entry.setStoreCode("online");
+				inventoryBatchRequestEntries.add(entry);
+			}
+
+			batchRequest.setEntries(inventoryBatchRequestEntries);
+			InventoryCustomBatchResponse batchResponse = content.inventory()
+					.custombatch(batchRequest).execute();
+
+			for (InventoryCustomBatchResponseEntry entry : batchResponse
+					.getEntries()) {
+				System.out.printf("update requested with batch id %s%n",
+						entry.getBatchId());
+				Errors errors = entry.getErrors();
+				java.util.List<Error> list = null;
+				if (errors != null)
+					list = errors.getErrors();
+				if (list != null) {
+					System.out.printf("batch id %s has errors",
+							entry.getBatchId());
+					for (Error error : list) {
+						System.out.printf("[%s] %s%n", error.getReason(),
+								error.getMessage());
+					}
+				}
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -313,13 +409,15 @@ public class ShoppingSample {
 		}
 
 	}
-	public void deleteAccount(BigInteger mcaId, BigInteger merchantId, ShoppingContent content) {
+
+	public void deleteAccount(BigInteger mcaId, BigInteger merchantId,
+			ShoppingContent content) {
 		try {
 			System.out.printf("Deleting account with ID %d%n", merchantId);
-	        content.accounts().delete(mcaId, merchantId).execute();
-		    } catch (Exception e) {
-		      e.printStackTrace();
-		    }
+			content.accounts().delete(mcaId, merchantId).execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void printAccount(Account account) {
