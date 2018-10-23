@@ -4,6 +4,10 @@
  *  The Content API for Shopping guide can be found at https://developers.google.com/shopping-content/v2/quickstart
  *  
  *  by JeeWook Kim
+ *
+ * 	Samples are offered on as-is basis, and designed only to provide you with certain examples of how such code samples could be utilized.
+ *  By implementing any of Samples, you agree to solely assume all responsibility for any consequences that arise from such implementation.
+ *
  * 
  */
 import java.io.File;
@@ -45,17 +49,17 @@ import com.google.api.services.content.model.ProductsListResponse;
 import com.google.api.services.content.model.ProductstatusesListResponse;
 
 public class ShoppingSample {
-	private static final String FILE_NAME = "My Project-9ce430751b21.json";
+	private static final String FILE_NAME = "MyProject-9ce430751b21.json";
 	private static final File KEY_FILE = new File(
 			System.getProperty("user.home"), FILE_NAME);
 	private static final String APPLICATION_NAME = "My Project-9ce430751b21";
 	// Test MCA parent ID (need to change into your account)
 	private static BigInteger mcaId = BigInteger.valueOf(111316412);
 	// Test Merchant ID with products (need to change into your account)
-	private BigInteger merchantId1 = BigInteger.valueOf(111315589);
+	private BigInteger merchantId1 = BigInteger.valueOf(112415898);
 	// Test Merchant ID to insert/remove products (need to change into your
 	// account)
-	private BigInteger merchantId2 = BigInteger.valueOf(118285250);
+	private BigInteger merchantId2 = BigInteger.valueOf(112427447);
 	// Test 3rd party merchant ID (need to change into your account)
 	private BigInteger merchantId3 = BigInteger.valueOf(117779752);
 	private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
@@ -72,9 +76,10 @@ public class ShoppingSample {
 					httpTransport, jsonFactory, credential)
 					.setApplicationName(APPLICATION_NAME);
 			ShoppingContent content = builder.build();
-			listProducts(merchantId2, content);
-			 listProductstatuses(merchantId2, content);
-			// insertProduct(merchantId2,content);
+		//	listProducts(merchantId2, content);
+		//	 listProductstatuses(merchantId2, content);
+			 insertProduct(merchantId1,content);
+			 insertProduct2(merchantId2,content);
 			// updatePrice(merchantId1,content);
 			// updateAvailability(merchantId1,content);
 			// batchUpdatePriceAvailability(merchantId2,content);
@@ -159,13 +164,61 @@ public class ShoppingSample {
 			product.setTargetCountry("KR");
 			product.setChannel("online");
 			product.setAvailability("in stock");
+			product.setBrand("브랜드 이름");
 			product.setCondition("new");
 			product.setGtin("9780009350899");
 			product.setAdult(false);
-
+			product.setProductType("카테고리");
 			Price price = new Price();
 			price.setValue("25000");
 			price.setCurrency("KRW");
+			product.setPrice(price);
+
+			Product result = content.products().insert(merchantId, product)
+					.execute();
+
+			System.out.println("product insert executed");
+
+			if (result != null) {
+				System.out.printf("Product %s inserted%n", result.getOfferId());
+				java.util.List<Error> warnings = result.getWarnings();
+				if (warnings != null) {
+					System.out.printf("There are %d warnings%n",
+							warnings.size());
+
+					for (Error warning : warnings) {
+						System.out.printf("[%s] %s%n", warning.getReason(),
+								warning.getMessage());
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	// insert a new product or update a product if it exists
+	public void insertProduct2(BigInteger merchantId, ShoppingContent content) {
+		try {
+			Product product = new Product();
+
+			product.setOfferId("cat01");
+			product.setTitle("Cat Toy");
+			product.setDescription("Cat Toy");
+			product.setLink("http://glossy-depot-510.appspot.com/cat/index.html");
+			product.setImageLink("http://glossy-depot-510.appspot.com/cat2.png");
+			product.setContentLanguage("en");
+			product.setTargetCountry("TW");
+			product.setChannel("online");
+			product.setAvailability("in stock");
+			product.setBrand("brand");
+			product.setCondition("new");
+			product.setGtin("9780009350899");
+			product.setAdult(false);
+			product.setProductType("cat1");
+			Price price = new Price();
+			price.setValue("25000");
+			price.setCurrency("TWD");
 			product.setPrice(price);
 
 			Product result = content.products().insert(merchantId, product)
